@@ -46,7 +46,7 @@ projeto-empregos/
 1. Clone o repositório:
 
 ```bash
-git clone https://github.com/ThalisTornquist/SEU-REPOSITORIO.git
+git clone https://github.com/ThalisTornquist/projeto-empregos
 ```
 
 2. Abra a pasta do projeto.
