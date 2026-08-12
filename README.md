@@ -4,7 +4,7 @@ Site desenvolvido com HTML5 e CSS3 para praticar desenvolvimento web e criação
 
 ## Demonstração
 
-🔗 **[Acessar o site pelo GitHub Pages](COLE-AQUI-O-LINK-DO-GITHUB-PAGES)**
+🔗 **[Acessar o site pelo GitHub Pages](https://thalistornquist.github.io/projeto-empregos/)**
 
 ## Sobre o projeto
 
