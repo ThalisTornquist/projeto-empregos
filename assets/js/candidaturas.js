@@ -25,7 +25,7 @@ const authSubmit = document.querySelector('#auth-submit');
 const authToggleMode = document.querySelector('#auth-toggle-mode');
 let applications = [];
 let pageError = '';
-let supabaseClient = null;
+let supabaseClient = window.TRAMPOFACIL_AUTH_CLIENT || null;
 let currentSession = null;
 let authMode = 'login';
 
@@ -65,21 +65,20 @@ function translateAuthError(error, mode) {
 }
 
 if (SUPABASE_ENABLED && window.supabase?.createClient) {
-  supabaseClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
+  supabaseClient = supabaseClient || window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
+  window.TRAMPOFACIL_AUTH_CLIENT = supabaseClient;
 }
 
 function showAccountState(session) {
   const isLoggedIn = Boolean(session);
   currentSession = session;
   if (SUPABASE_ENABLED) {
-    accountPanel.hidden = false;
+    accountPanel.hidden = isLoggedIn;
     document.querySelector('#account-local-notice').hidden = true;
     document.querySelector('#account-heading').textContent = 'Entre para acompanhar suas vagas';
     document.querySelector('#account-copy').textContent = 'Crie uma conta ou entre para acessar sua lista pessoal, de qualquer dispositivo.';
     document.querySelector('#auth-form').hidden = isLoggedIn;
-    document.querySelector('#account-session').hidden = !isLoggedIn;
     trackerContent.hidden = !isLoggedIn || !API_BASE_URL;
-    if (isLoggedIn) document.querySelector('#account-email').textContent = session.user.email || 'Conta conectada';
     if (!API_BASE_URL) {
       configurationMessage.hidden = false;
       configurationMessage.textContent = 'A autenticação está pronta, mas falta configurar a URL da API em assets/js/config.js para salvar as candidaturas na sua conta.';
@@ -87,7 +86,6 @@ function showAccountState(session) {
   } else {
     accountPanel.hidden = false;
     document.querySelector('#auth-form').hidden = true;
-    document.querySelector('#account-session').hidden = true;
     document.querySelector('#account-heading').textContent = 'Login online ainda não configurado';
     document.querySelector('#account-copy').textContent = 'Por isso você não encontrou os campos de login: esta cópia está rodando sem um projeto Supabase conectado.';
     const localNotice = document.querySelector('#account-local-notice');
@@ -316,15 +314,6 @@ if (SUPABASE_ENABLED) {
         showAuthMessage('Não foi possível conectar ao Supabase Auth. Confira sua conexão ou aguarde se o projeto estiver retomando.', 'error');
       } finally {
         authForm.querySelectorAll('button').forEach((control) => { control.disabled = false; });
-      }
-    });
-    document.querySelector('#logout-button').addEventListener('click', async () => {
-      try {
-        const { error } = await supabaseClient.auth.signOut();
-        if (error) showAuthMessage('Não foi possível sair da conta. Tente novamente.', 'error');
-        else showAuthMessage('Você saiu da sua conta.', 'success');
-      } catch {
-        showAuthMessage('Não foi possível encerrar a sessão agora. Tente novamente.', 'error');
       }
     });
   }

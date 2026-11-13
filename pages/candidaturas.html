@@ -6,6 +6,7 @@
   <meta name="description" content="Registre as vagas encontradas em outros sites e acompanhe suas candidaturas em um só lugar.">
   <title>Minhas candidaturas — TrampoFácil</title>
   <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg">
   <script src="../assets/js/config.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="../assets/js/main.js" defer></script>
@@ -27,7 +28,6 @@
       <div><p class="eyebrow">Seu painel pessoal</p><h1 class="page-title">Uma oportunidade<br><em>de cada vez.</em></h1>
         <p class="page-intro">Encontrou uma vaga no LinkedIn, Gupy ou outro site e se candidatou? Registre-a aqui para guardar o link e acompanhar cada etapa. As empresas não publicam vagas neste painel.</p>
       </div>
-      <div class="tracker-stamp"><span>SEU PRÓXIMO PASSO</span><b>Começa com<br>organização.</b><span class="stamp-mark">↗</span></div>
     </div>
 
     <section id="account-panel" class="resource-panel account-panel" hidden aria-labelledby="account-heading">
@@ -41,7 +41,6 @@
         <div class="auth-actions"><button id="auth-submit" class="button button-primary" type="submit">Entrar</button><button id="auth-toggle-mode" class="button button-outline" type="button">Criar conta</button></div>
         <p id="auth-message" class="auth-feedback" role="status" aria-live="polite" hidden></p>
       </form>
-      <div id="account-session" class="account-session" hidden><span id="account-email"></span><button id="logout-button" class="button button-outline" type="button">Sair</button></div>
     </section>
     <p id="configuration-message" class="storage-message" hidden></p>
 
