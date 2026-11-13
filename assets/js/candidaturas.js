@@ -19,10 +19,50 @@ const accountPanel = document.querySelector('#account-panel');
 const authForm = document.querySelector('#auth-form');
 const authMessage = document.querySelector('#auth-message');
 const configurationMessage = document.querySelector('#configuration-message');
+const authNameField = document.querySelector('#signup-name-field');
+const authName = document.querySelector('#auth-name');
+const authSubmit = document.querySelector('#auth-submit');
+const authToggleMode = document.querySelector('#auth-toggle-mode');
 let applications = [];
 let pageError = '';
 let supabaseClient = null;
 let currentSession = null;
+let authMode = 'login';
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isSignup = mode === 'signup';
+  authNameField.hidden = !isSignup;
+  authName.required = isSignup;
+  document.querySelector('#auth-password').autocomplete = isSignup ? 'new-password' : 'current-password';
+  authSubmit.textContent = isSignup ? 'Criar minha conta' : 'Entrar';
+  authToggleMode.textContent = isSignup ? 'Já tenho conta · Entrar' : 'Criar conta';
+  document.querySelector('#account-heading').textContent = isSignup ? 'Crie seu espaço pessoal' : 'Entre para acompanhar suas vagas';
+  document.querySelector('#account-copy').textContent = isSignup
+    ? 'Informe seu nome, e-mail e crie uma senha para salvar suas candidaturas na sua própria conta.'
+    : 'Entre com o e-mail e a senha da sua conta para ver suas candidaturas.';
+  showAuthMessage('', 'info');
+}
+
+function showAuthMessage(message, kind = 'info') {
+  authMessage.textContent = message;
+  authMessage.dataset.kind = kind;
+  authMessage.hidden = !message;
+}
+
+function translateAuthError(error, mode) {
+  const message = String(error?.message || '').toLowerCase();
+  if (message.includes('invalid login credentials')) return 'E-mail ou senha inválidos. Se ainda não criou sua conta, escolha “Criar conta”.';
+  if (message.includes('email not confirmed')) return 'Confirme seu e-mail pelo link enviado antes de entrar.';
+  if (message.includes('already registered') || message.includes('user already exists')) return 'Já existe uma conta com este e-mail. Entre ou use outro e-mail.';
+  if (message.includes('password') && (message.includes('length') || message.includes('characters'))) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if (message.includes('signup is disabled') || message.includes('signups not allowed')) return 'O cadastro está desativado no Supabase. Ative o cadastro por e-mail nas configurações de autenticação.';
+  if (message.includes('rate limit') || message.includes('too many requests')) return 'Muitas tentativas em pouco tempo. Aguarde um pouco e tente novamente.';
+  if (message.includes('invalid email')) return 'Informe um endereço de e-mail válido.';
+  return mode === 'signup'
+    ? 'Não foi possível criar a conta. Confira os dados e a configuração de autenticação do Supabase.'
+    : 'Não foi possível entrar. Confira o e-mail, a senha e se o cadastro já foi confirmado.';
+}
 
 if (SUPABASE_ENABLED && window.supabase?.createClient) {
   supabaseClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
@@ -238,23 +278,42 @@ if (SUPABASE_ENABLED) {
       showAccountState(session);
       refreshApplications();
     });
+    authToggleMode.addEventListener('click', () => {
+      setAuthMode(authMode === 'login' ? 'signup' : 'login');
+    });
     authForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const button = event.submitter;
       const email = authForm.elements.email.value.trim();
       const password = authForm.elements.password.value;
-      authMessage.textContent = 'Aguarde…';
+      const mode = authMode;
+      const name = authName.value.trim();
+      showAuthMessage(mode === 'signup' ? 'Criando sua conta…' : 'Verificando seus dados…', 'info');
       authForm.querySelectorAll('button').forEach((control) => { control.disabled = true; });
       try {
-        const result = button.dataset.authAction === 'signup'
-          ? await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` } })
+        const result = mode === 'signup'
+          ? await supabaseClient.auth.signUp({
+              email,
+              password,
+              options: {
+                data: { full_name: name },
+                emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
+              },
+            })
           : await supabaseClient.auth.signInWithPassword({ email, password });
-        if (result.error) authMessage.textContent = result.error.message;
-        else if (button.dataset.authAction === 'signup' && !result.data.session)
-          authMessage.textContent = 'Conta criada. Confirme o e-mail enviado para concluir o cadastro e depois entre.';
-        else authMessage.textContent = 'Conta conectada.';
+        if (result.error) {
+          showAuthMessage(translateAuthError(result.error, mode), 'error');
+        } else if (mode === 'signup' && !result.data.session) {
+          setAuthMode('login');
+          authForm.elements.email.value = email;
+          authForm.elements.password.value = '';
+          showAuthMessage(`Conta criada para ${email}. Confirme o e-mail enviado e depois entre com sua senha.`, 'success');
+        } else if (mode === 'signup') {
+          showAuthMessage('Conta criada e conectada. Carregando suas candidaturas…', 'success');
+        } else {
+          showAuthMessage('Login realizado. Carregando suas candidaturas…', 'success');
+        }
       } catch {
-        authMessage.textContent = 'Não foi possível falar com o serviço de login. Confira sua conexão e tente novamente.';
+        showAuthMessage('Não foi possível conectar ao Supabase Auth. Confira sua conexão ou aguarde se o projeto estiver retomando.', 'error');
       } finally {
         authForm.querySelectorAll('button').forEach((control) => { control.disabled = false; });
       }
@@ -262,9 +321,10 @@ if (SUPABASE_ENABLED) {
     document.querySelector('#logout-button').addEventListener('click', async () => {
       try {
         const { error } = await supabaseClient.auth.signOut();
-        authMessage.textContent = error?.message || 'Você saiu da sua conta.';
+        if (error) showAuthMessage('Não foi possível sair da conta. Tente novamente.', 'error');
+        else showAuthMessage('Você saiu da sua conta.', 'success');
       } catch {
-        authMessage.textContent = 'Não foi possível encerrar a sessão agora. Tente novamente.';
+        showAuthMessage('Não foi possível encerrar a sessão agora. Tente novamente.', 'error');
       }
     });
   }

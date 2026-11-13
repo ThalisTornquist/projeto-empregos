@@ -35,10 +35,11 @@
         <p id="account-copy">Crie uma conta ou entre para acessar sua lista pessoal, de qualquer dispositivo.</p>
         <p id="account-local-notice" class="auth-message" hidden></p></div>
       <form id="auth-form" class="auth-form">
+        <div id="signup-name-field" hidden><label for="auth-name">Nome</label><input id="auth-name" name="name" type="text" autocomplete="name" maxlength="100"></div>
         <label for="auth-email">E-mail</label><input id="auth-email" name="email" type="email" autocomplete="email" required>
         <label for="auth-password">Senha</label><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="6" required>
-        <div class="auth-actions"><button class="button button-primary" type="submit" data-auth-action="login">Entrar</button><button class="button button-outline" type="button" data-auth-action="signup">Criar conta</button></div>
-        <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
+        <div class="auth-actions"><button id="auth-submit" class="button button-primary" type="submit">Entrar</button><button id="auth-toggle-mode" class="button button-outline" type="button">Criar conta</button></div>
+        <p id="auth-message" class="auth-feedback" role="status" aria-live="polite" hidden></p>
       </form>
       <div id="account-session" class="account-session" hidden><span id="account-email"></span><button id="logout-button" class="button button-outline" type="button">Sair</button></div>
     </section>
