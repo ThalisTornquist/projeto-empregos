@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Registre as vagas encontradas em outros sites e acompanhe suas candidaturas em um só lugar.">
+  <title>Minhas candidaturas — TrampoFácil</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="../assets/js/config.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="../assets/js/main.js" defer></script>
+  <script src="../assets/js/candidaturas.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <header class="site-header">
+    <a class="brand" href="../index.html"><span class="brand-mark">T</span>trampo<span>fácil</span></a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav class="site-nav" id="site-nav" aria-label="Navegação principal">
+      <a href="../index.html">Início</a><a href="recursos.html">Encontrar vagas</a>
+      <a href="curriculos.html">Currículo</a><a href="entrevista.html">Entrevistas</a>
+      <a class="nav-cta active" href="candidaturas.html">Minhas candidaturas <span data-application-count>0</span></a>
+    </nav>
+  </header>
+  <main id="conteudo" class="wrap page-main tracker-main">
+    <div class="tracker-heading">
+      <div><p class="eyebrow">Seu painel pessoal</p><h1 class="page-title">Uma oportunidade<br><em>de cada vez.</em></h1>
+        <p class="page-intro">Encontrou uma vaga no LinkedIn, Gupy ou outro site e se candidatou? Registre-a aqui para guardar o link e acompanhar cada etapa. As empresas não publicam vagas neste painel.</p>
+      </div>
+      <div class="tracker-stamp"><span>SEU PRÓXIMO PASSO</span><b>Começa com<br>organização.</b><span class="stamp-mark">↗</span></div>
+    </div>
+
+    <section id="account-panel" class="resource-panel account-panel" hidden aria-labelledby="account-heading">
+      <div><span class="card-kicker">SEU ESPAÇO PESSOAL</span><h2 id="account-heading">Entre para acompanhar suas vagas</h2>
+        <p id="account-copy">Crie uma conta ou entre para acessar sua lista pessoal, de qualquer dispositivo.</p>
+        <p id="account-local-notice" class="auth-message" hidden></p></div>
+      <form id="auth-form" class="auth-form">
+        <label for="auth-email">E-mail</label><input id="auth-email" name="email" type="email" autocomplete="email" required>
+        <label for="auth-password">Senha</label><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="6" required>
+        <div class="auth-actions"><button class="button button-primary" type="submit" data-auth-action="login">Entrar</button><button class="button button-outline" type="button" data-auth-action="signup">Criar conta</button></div>
+        <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
+      </form>
+      <div id="account-session" class="account-session" hidden><span id="account-email"></span><button id="logout-button" class="button button-outline" type="button">Sair</button></div>
+    </section>
+    <p id="configuration-message" class="storage-message" hidden></p>
+
+    <div id="tracker-content">
+      <section class="stats-grid" aria-label="Resumo das candidaturas">
+        <article class="stat-card"><span>Total de vagas</span><b data-stat-total>0</b></article>
+        <article class="stat-card"><span>Em andamento</span><b data-stat-active>0</b></article>
+        <article class="stat-card"><span>Entrevistas</span><b data-stat-interviews>0</b></article>
+        <article class="stat-card"><span>Propostas</span><b data-stat-offers>0</b></article>
+      </section>
+      <div class="tracker-layout">
+        <section class="resource-panel add-panel">
+          <span class="card-kicker">NOVA OPORTUNIDADE</span><h2>Registrar uma vaga</h2>
+          <p>Adicione uma vaga de outro site depois de se candidatar. Atualize a etapa conforme o processo avançar.</p>
+          <form id="application-form" class="application-form">
+            <label for="company">Empresa <span aria-hidden="true">*</span></label><input id="company" name="company" required maxlength="80" placeholder="Ex.: Empresa ou organização">
+            <label for="role">Cargo <span aria-hidden="true">*</span></label><input id="role" name="role" required maxlength="100" placeholder="Ex.: Estágio em desenvolvimento">
+            <div class="form-row"><div><label for="status">Etapa</label><select id="status" name="status"><option value="applied">Candidatura enviada</option><option value="interview">Entrevista</option><option value="test">Teste técnico</option><option value="offer">Proposta</option><option value="rejected">Encerrada</option></select></div><div><label for="date">Data da candidatura</label><input id="date" name="date" type="date"></div></div>
+            <label for="link">Link do anúncio <span class="optional">opcional</span></label><input id="link" name="link" type="url" placeholder="https://">
+            <button class="button button-primary form-submit" type="submit">Adicionar ao meu acompanhamento <span aria-hidden="true">+</span></button>
+            <p class="privacy-note">Cada conta acessa somente as próprias candidaturas.</p>
+          </form>
+        </section>
+        <section class="applications-panel" aria-labelledby="applications-heading">
+          <div class="list-heading"><div><span class="card-kicker">SEU ACOMPANHAMENTO</span><h2 id="applications-heading">Vagas em que me candidatei <span data-list-count>(0)</span></h2></div>
+            <label class="filter-label" for="status-filter">Filtrar<select id="status-filter"><option value="all">Todas as etapas</option><option value="applied">Candidatura enviada</option><option value="interview">Entrevista</option><option value="test">Teste técnico</option><option value="offer">Proposta</option><option value="rejected">Encerrada</option></select></label>
+          </div>
+          <div id="application-list" class="application-list" aria-live="polite"></div>
+          <p id="storage-message" class="storage-message" hidden>O armazenamento local está indisponível neste navegador.</p>
+        </section>
+      </div>
+    </div>
+    <a class="back-link" href="../index.html">← Voltar ao início</a>
+  </main>
+  <footer class="site-footer"><div class="wrap footer-inner"><a class="brand brand-footer" href="../index.html"><span class="brand-mark">T</span>trampo<span>fácil</span></a><p>Feito para apoiar quem está construindo seu caminho profissional.</p><span>© <span data-year>2026</span> TrampoFácil</span></div></footer>
+</body>
+</html>

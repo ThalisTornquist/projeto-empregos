@@ -1,0 +1,12 @@
+# Python environment and local API data
+backend/.venv/
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/data/
+backend/.env
+
+# Editors and operating systems
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
