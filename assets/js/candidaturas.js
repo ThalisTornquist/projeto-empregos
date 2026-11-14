@@ -22,6 +22,8 @@ const authMessage = document.querySelector('#auth-message');
 const configurationMessage = document.querySelector('#configuration-message');
 const authNameField = document.querySelector('#signup-name-field');
 const authName = document.querySelector('#auth-name');
+const authPassword = document.querySelector('#auth-password');
+const passwordToggle = document.querySelector('#password-toggle');
 const authSubmit = document.querySelector('#auth-submit');
 const authToggleMode = document.querySelector('#auth-toggle-mode');
 let applications = [];
@@ -36,7 +38,8 @@ function setAuthMode(mode) {
   const isSignup = mode === 'signup';
   authNameField.hidden = !isSignup;
   authName.required = isSignup;
-  document.querySelector('#auth-password').autocomplete = isSignup ? 'new-password' : 'current-password';
+  authPassword.autocomplete = isSignup ? 'new-password' : 'current-password';
+  hidePassword();
   authSubmit.textContent = isSignup ? 'Criar minha conta' : 'Entrar';
   authToggleMode.textContent = isSignup ? 'Já tenho conta · Entrar' : 'Criar conta';
   document.querySelector('#account-heading').textContent = isSignup ? 'Crie seu espaço pessoal' : 'Entre para acompanhar suas vagas';
@@ -50,6 +53,12 @@ function showAuthMessage(message, kind = 'info') {
   authMessage.textContent = message;
   authMessage.dataset.kind = kind;
   authMessage.hidden = !message;
+}
+
+function hidePassword() {
+  authPassword.type = 'password';
+  passwordToggle.textContent = 'Mostrar';
+  passwordToggle.setAttribute('aria-pressed', 'false');
 }
 
 function translateAuthError(error, mode) {
@@ -294,6 +303,13 @@ authToggleMode.addEventListener('click', () => {
   setAuthMode(authMode === 'login' ? 'signup' : 'login');
 });
 
+passwordToggle.addEventListener('click', () => {
+  const showPassword = authPassword.type === 'password';
+  authPassword.type = showPassword ? 'text' : 'password';
+  passwordToggle.textContent = showPassword ? 'Ocultar' : 'Mostrar';
+  passwordToggle.setAttribute('aria-pressed', String(showPassword));
+});
+
 authForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   const email = authForm.elements.email.value.trim();
@@ -320,6 +336,7 @@ authForm.addEventListener('submit', async (event) => {
     if (result.error) {
       authForm.elements.email.value = email;
       authForm.elements.password.value = '';
+      hidePassword();
       showAuthMessage(translateAuthError(result.error, mode), 'error');
     } else if (mode === 'signup' && !result.data.session) {
       setAuthMode('login');
@@ -334,6 +351,7 @@ authForm.addEventListener('submit', async (event) => {
   } catch (error) {
     authForm.elements.email.value = email;
     authForm.elements.password.value = '';
+    hidePassword();
     showAuthMessage(translateAuthError(error, mode), 'error');
   } finally {
     authForm.querySelectorAll('button').forEach((control) => { control.disabled = false; });

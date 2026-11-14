@@ -37,7 +37,7 @@
       <form id="auth-form" class="auth-form">
         <div id="signup-name-field" hidden><label for="auth-name">Nome</label><input id="auth-name" name="name" type="text" autocomplete="name" maxlength="100"></div>
         <label for="auth-email">E-mail</label><input id="auth-email" name="email" type="email" autocomplete="email" required>
-        <label for="auth-password">Senha</label><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="6" required>
+        <label for="auth-password">Senha</label><div class="password-input"><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="6" required><button id="password-toggle" class="password-toggle" type="button" aria-controls="auth-password" aria-pressed="false">Mostrar</button></div>
         <div class="auth-actions"><button id="auth-submit" class="button button-primary" type="submit">Entrar</button><button id="auth-toggle-mode" class="button button-outline" type="button">Criar conta</button></div>
         <p id="auth-message" class="auth-feedback" role="status" aria-live="polite" hidden></p>
       </form>
