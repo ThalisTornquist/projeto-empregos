@@ -264,13 +264,18 @@ if (SUPABASE_ENABLED) {
   accountPanel.hidden = false;
   trackerContent.hidden = true;
   if (!supabaseClient) {
-    document.querySelector('#auth-form').hidden = true;
     configurationMessage.hidden = false;
     configurationMessage.textContent = 'Não foi possível carregar o cliente de autenticação. Confira sua conexão e recarregue a página.';
+    showAuthMessage('O formulário está visível, mas a autenticação não inicializou. Confira a conexão e recarregue a página.', 'error');
+    authForm.querySelectorAll('button').forEach((control) => { control.disabled = true; });
   } else {
-    supabaseClient.auth.getSession().then(({ data }) => {
-      showAccountState(data.session);
+    supabaseClient.auth.getSession().then(({ data, error }) => {
+      showAccountState(data?.session || null);
+      if (error) showAuthMessage('Não foi possível verificar sua sessão. Confira sua conexão e tente novamente.', 'error');
       refreshApplications();
+    }).catch(() => {
+      showAccountState(null);
+      showAuthMessage('Não foi possível verificar sua sessão. Confira sua conexão e tente novamente.', 'error');
     });
     supabaseClient.auth.onAuthStateChange((_event, session) => {
       showAccountState(session);
