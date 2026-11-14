@@ -1,3 +1,4 @@
+(function () {
 const STORAGE_KEY = 'trampofacil-applications';
 const LOCAL_API_URL = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   ? 'http://127.0.0.1:8000'
@@ -25,6 +26,7 @@ const authSubmit = document.querySelector('#auth-submit');
 const authToggleMode = document.querySelector('#auth-toggle-mode');
 let applications = [];
 let pageError = '';
+let isLoading = false;
 let supabaseClient = window.TRAMPOFACIL_AUTH_CLIENT || null;
 let currentSession = null;
 let authMode = 'login';
@@ -52,23 +54,40 @@ function showAuthMessage(message, kind = 'info') {
 
 function translateAuthError(error, mode) {
   const message = String(error?.message || '').toLowerCase();
-  if (message.includes('invalid login credentials')) return 'E-mail ou senha inválidos. Se ainda não criou sua conta, escolha “Criar conta”.';
+  if (['failed to fetch', 'fetch failed', 'networkerror', 'load failed'].some((part) => message.includes(part))) {
+    return 'N\u00e3o foi poss\u00edvel conectar ao login do Supabase. Confira sua conex\u00e3o e tente novamente; a API de candidaturas n\u00e3o participa do login.';
+  }
+  if (message.includes('invalid login credentials')) return 'E-mail ou senha inv\u00e1lidos. Se ainda n\u00e3o criou sua conta, escolha Criar conta.';
   if (message.includes('email not confirmed')) return 'Confirme seu e-mail pelo link enviado antes de entrar.';
-  if (message.includes('already registered') || message.includes('user already exists')) return 'Já existe uma conta com este e-mail. Entre ou use outro e-mail.';
+  if (message.includes('already registered') || message.includes('user already exists')) return 'J\u00e1 existe uma conta com este e-mail. Entre ou use outro e-mail.';
   if (message.includes('password') && (message.includes('length') || message.includes('characters'))) return 'A senha precisa ter pelo menos 6 caracteres.';
-  if (message.includes('signup is disabled') || message.includes('signups not allowed')) return 'O cadastro está desativado no Supabase. Ative o cadastro por e-mail nas configurações de autenticação.';
+  if (message.includes('signup is disabled') || message.includes('signups not allowed')) return 'O cadastro est\u00e1 desativado no Supabase. Ative o cadastro por e-mail nas configura\u00e7\u00f5es de autentica\u00e7\u00e3o.';
   if (message.includes('rate limit') || message.includes('too many requests')) return 'Muitas tentativas em pouco tempo. Aguarde um pouco e tente novamente.';
-  if (message.includes('invalid email')) return 'Informe um endereço de e-mail válido.';
+  if (message.includes('invalid email')) return 'Informe um endere\u00e7o de e-mail v\u00e1lido.';
   return mode === 'signup'
-    ? 'Não foi possível criar a conta. Confira os dados e a configuração de autenticação do Supabase.'
-    : 'Não foi possível entrar. Confira o e-mail, a senha e se o cadastro já foi confirmado.';
+    ? 'N\u00e3o foi poss\u00edvel criar a conta. Confira os dados e a configura\u00e7\u00e3o do Supabase.'
+    : 'N\u00e3o foi poss\u00edvel entrar. Confira o e-mail, a senha e se o cadastro j\u00e1 foi confirmado.';
 }
-
 if (SUPABASE_ENABLED && window.supabase?.createClient) {
   supabaseClient = supabaseClient || window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
   window.TRAMPOFACIL_AUTH_CLIENT = supabaseClient;
 }
 
+function translateApiError(error) {
+  const message = String(error?.message || '').toLowerCase();
+  if (['failed to fetch', 'fetch failed', 'networkerror', 'load failed'].some((part) => message.includes(part))) {
+    return 'A API de candidaturas n\u00e3o respondeu. Ela pode estar iniciando no Render; aguarde alguns segundos e tente novamente.';
+  }
+  if (/http 503/.test(message)) return `O servi\u00e7o da API n\u00e3o est\u00e1 pronto: ${error.message}`;
+  if (/http 5\d\d/.test(message)) return `A API respondeu com erro interno (${error.message}). Verifique o servi\u00e7o da API e o banco de dados no Render/Supabase.`;
+  if (message.includes('database') || message.includes('sql') || message.includes('postgres')) {
+    return `O banco de dados n\u00e3o conseguiu concluir a opera\u00e7\u00e3o: ${error.message}`;
+  }
+  if (message.includes('401') || message.includes('sess\u00e3o inv\u00e1lida') || message.includes('sessao invalida')) {
+    return 'Sua sess\u00e3o expirou. Entre novamente para carregar suas candidaturas.';
+  }
+  return error?.message || 'N\u00e3o foi poss\u00edvel acessar a API de candidaturas. Tente novamente.';
+}
 function showAccountState(session) {
   const isLoggedIn = Boolean(session);
   currentSession = session;
@@ -108,7 +127,7 @@ async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail || `A API respondeu com o código ${response.status}.`);
+    throw new Error(`HTTP ${response.status}: ${payload.detail || "A API recusou a solicitacao."}`);
   }
   return response.status === 204 ? null : response.json();
 }
@@ -136,10 +155,13 @@ async function refreshApplications() {
   if (SUPABASE_ENABLED && !currentSession) {
     applications = [];
     pageError = '';
+    isLoading = false;
     render();
     return;
   }
   pageError = '';
+  isLoading = Boolean(API_BASE_URL);
+  render();
   try {
     applications = API_BASE_URL ? await apiRequest('/applications') : loadLocalApplications();
   } catch (error) {
@@ -149,8 +171,9 @@ async function refreshApplications() {
       ? 'A API online exige uma conta. Configure a URL e a chave pública do Supabase em assets/js/config.js.'
       : ['localhost', '127.0.0.1'].includes(apiHost) && error.message === 'Failed to fetch'
         ? 'Não consegui acessar a API local. Confira se ela está ligada e se a porta do site está permitida em TRAMPOFACIL_CORS_ORIGINS.'
-        : error.message;
+        : translateApiError(error);
   }
+  isLoading = false;
   render();
 }
 
@@ -187,6 +210,13 @@ function render() {
     errorState.append(makeElement('h3', '', 'Não foi possível carregar as candidaturas.'));
     errorState.append(makeElement('p', '', pageError));
     list.append(errorState);
+    return;
+  }
+  if (isLoading) {
+    const loadingState = makeElement('div', 'empty-state');
+    loadingState.append(makeElement('h3', '', 'Carregando suas candidaturas...'));
+    loadingState.append(makeElement('p', '', 'A API pode levar alguns segundos para responder se estava inativa.'));
+    list.append(loadingState);
     return;
   }
   if (!visibleItems.length) {
@@ -260,6 +290,55 @@ function render() {
   });
 }
 
+authToggleMode.addEventListener('click', () => {
+  setAuthMode(authMode === 'login' ? 'signup' : 'login');
+});
+
+authForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const email = authForm.elements.email.value.trim();
+  const password = authForm.elements.password.value;
+  const mode = authMode;
+  const name = authName.value.trim();
+  if (!SUPABASE_ENABLED || !supabaseClient) {
+    showAuthMessage('O servi\u00e7o de login n\u00e3o inicializou. Confira se a biblioteca do Supabase carregou e tente novamente.', 'error');
+    return;
+  }
+  showAuthMessage(mode === 'signup' ? 'Criando sua conta...' : 'Verificando seus dados...', 'info');
+  authForm.querySelectorAll('button').forEach((control) => { control.disabled = true; });
+  try {
+    const result = mode === 'signup'
+      ? await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: name },
+            emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
+          },
+        })
+      : await supabaseClient.auth.signInWithPassword({ email, password });
+    if (result.error) {
+      authForm.elements.email.value = email;
+      authForm.elements.password.value = '';
+      showAuthMessage(translateAuthError(result.error, mode), 'error');
+    } else if (mode === 'signup' && !result.data.session) {
+      setAuthMode('login');
+      authForm.elements.email.value = email;
+      authForm.elements.password.value = '';
+      showAuthMessage(`Conta criada para ${email}. Confirme o e-mail enviado e depois entre com sua senha.`, 'success');
+    } else if (mode === 'signup') {
+      showAuthMessage('Conta criada e conectada. Carregando suas candidaturas...', 'success');
+    } else {
+      showAuthMessage('Login realizado. Carregando suas candidaturas...', 'success');
+    }
+  } catch (error) {
+    authForm.elements.email.value = email;
+    authForm.elements.password.value = '';
+    showAuthMessage(translateAuthError(error, mode), 'error');
+  } finally {
+    authForm.querySelectorAll('button').forEach((control) => { control.disabled = false; });
+  }
+});
 if (SUPABASE_ENABLED) {
   accountPanel.hidden = false;
   trackerContent.hidden = true;
@@ -267,7 +346,6 @@ if (SUPABASE_ENABLED) {
     configurationMessage.hidden = false;
     configurationMessage.textContent = 'Não foi possível carregar o cliente de autenticação. Confira sua conexão e recarregue a página.';
     showAuthMessage('O formulário está visível, mas a autenticação não inicializou. Confira a conexão e recarregue a página.', 'error');
-    authForm.querySelectorAll('button').forEach((control) => { control.disabled = true; });
   } else {
     supabaseClient.auth.getSession().then(({ data, error }) => {
       showAccountState(data?.session || null);
@@ -280,46 +358,6 @@ if (SUPABASE_ENABLED) {
     supabaseClient.auth.onAuthStateChange((_event, session) => {
       showAccountState(session);
       refreshApplications();
-    });
-    authToggleMode.addEventListener('click', () => {
-      setAuthMode(authMode === 'login' ? 'signup' : 'login');
-    });
-    authForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const email = authForm.elements.email.value.trim();
-      const password = authForm.elements.password.value;
-      const mode = authMode;
-      const name = authName.value.trim();
-      showAuthMessage(mode === 'signup' ? 'Criando sua conta…' : 'Verificando seus dados…', 'info');
-      authForm.querySelectorAll('button').forEach((control) => { control.disabled = true; });
-      try {
-        const result = mode === 'signup'
-          ? await supabaseClient.auth.signUp({
-              email,
-              password,
-              options: {
-                data: { full_name: name },
-                emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
-              },
-            })
-          : await supabaseClient.auth.signInWithPassword({ email, password });
-        if (result.error) {
-          showAuthMessage(translateAuthError(result.error, mode), 'error');
-        } else if (mode === 'signup' && !result.data.session) {
-          setAuthMode('login');
-          authForm.elements.email.value = email;
-          authForm.elements.password.value = '';
-          showAuthMessage(`Conta criada para ${email}. Confirme o e-mail enviado e depois entre com sua senha.`, 'success');
-        } else if (mode === 'signup') {
-          showAuthMessage('Conta criada e conectada. Carregando suas candidaturas…', 'success');
-        } else {
-          showAuthMessage('Login realizado. Carregando suas candidaturas…', 'success');
-        }
-      } catch {
-        showAuthMessage('Não foi possível conectar ao Supabase Auth. Confira sua conexão ou aguarde se o projeto estiver retomando.', 'error');
-      } finally {
-        authForm.querySelectorAll('button').forEach((control) => { control.disabled = false; });
-      }
     });
   }
 } else {
@@ -357,7 +395,7 @@ form.addEventListener('submit', async (event) => {
     form.reset();
     document.querySelector('#date').value = new Date().toISOString().slice(0, 10);
     await refreshApplications();
-  } catch (error) { window.alert(error.message); }
+  } catch (error) { window.alert(translateApiError(error)); }
   finally { submit.disabled = false; }
 });
 
@@ -365,3 +403,4 @@ statusFilter.addEventListener('change', render);
 form.querySelector('#link').addEventListener('input', (event) => event.currentTarget.setCustomValidity(''));
 document.querySelector('#date').value = new Date().toISOString().slice(0, 10);
 if (!SUPABASE_ENABLED) refreshApplications();
+})();
