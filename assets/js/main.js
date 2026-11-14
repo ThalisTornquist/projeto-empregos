@@ -125,9 +125,8 @@ function createProfileMenu() {
     try {
       const { error } = await window.TRAMPOFACIL_AUTH_CLIENT.auth.signOut();
       if (error) throw error;
-      if (!window.location.pathname.endsWith('/candidaturas.html')) {
-        window.location.href = applicationsLink.href;
-      }
+      // Reopen the tracker from a clean auth state so its login form is always shown.
+      window.location.assign(applicationsLink.href);
     } catch {
       switchButton.disabled = false;
       signOutButton.disabled = false;
